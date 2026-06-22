@@ -710,9 +710,103 @@
     .container{padding:0 20px;}
     .about-stats{gap:28px;}
   }
+
+  /* ============ ANNOUNCEMENT BANNER ============ */
+  .announcement-bar{
+    background:var(--navy-deep);
+    color:rgba(250,245,236,.85);
+    text-align:center;
+    padding:10px 20px;
+    font-size:.82rem;
+    letter-spacing:.5px;
+    position:relative;
+    z-index:1001;
+  }
+  .announcement-bar strong{color:var(--gold-soft);}
+  .announcement-bar a{color:var(--gold-soft);text-decoration:underline;text-underline-offset:3px;}
+
+  /* ============ FLOATING WHATSAPP ============ */
+  .wa-float{
+    position:fixed;
+    bottom:28px;right:24px;
+    width:58px;height:58px;
+    background:#25d366;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 24px rgba(37,211,102,.45);
+    z-index:1200;
+    transition:transform .3s ease, box-shadow .3s ease;
+    color:#fff;
+  }
+  .wa-float:hover{transform:scale(1.12);box-shadow:0 10px 32px rgba(37,211,102,.55);}
+  .wa-float svg{width:30px;height:30px;}
+
+  /* ============ BACK TO TOP ============ */
+  .back-top{
+    position:fixed;
+    bottom:96px;right:24px;
+    width:42px;height:42px;
+    background:var(--navy);
+    color:var(--cream);
+    border:none;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    z-index:1200;
+    opacity:0;
+    transform:translateY(12px);
+    transition:opacity .35s ease, transform .35s ease, background .25s ease;
+    box-shadow:0 4px 16px rgba(20,41,64,.25);
+  }
+  .back-top.visible{opacity:1;transform:translateY(0);}
+  .back-top:hover{background:var(--gold);color:var(--navy-deep);}
+  .back-top svg{width:18px;height:18px;}
+
+  /* ============ TOAST ============ */
+  .toast-wrap{
+    position:fixed;
+    bottom:24px;left:50%;
+    transform:translateX(-50%);
+    z-index:1300;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    pointer-events:none;
+  }
+  .toast{
+    background:var(--navy-deep);
+    color:var(--cream);
+    padding:12px 22px;
+    border-radius:999px;
+    font-size:.88rem;
+    font-weight:500;
+    box-shadow:0 8px 24px rgba(0,0,0,.2);
+    display:flex;align-items:center;gap:10px;
+    opacity:0;
+    transform:translateY(16px) scale(.95);
+    transition:opacity .3s ease, transform .3s ease;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateY(0) scale(1);}
+  .toast .toast-dot{
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--gold);
+    flex-shrink:0;
+  }
+
+  /* ============ NAV ACTIVE LINK ============ */
+  nav a.active{color:var(--gold) !important;}
+  nav a.active::after{width:100% !important;}
 </style>
 </head>
 <body>
+
+<!-- ============ ANNOUNCEMENT BAR ============ -->
+<div class="announcement-bar" role="banner">
+  ✨ <strong>Abierto Mar–Vie 9:30–18:30 · Sáb 9:30–16:00</strong> — Pedidos por <a href="#pedido">WhatsApp</a> con 24 h de anticipación
+</div>
 
 <!-- ============ HEADER ============ -->
 <header id="site-header">
@@ -1174,7 +1268,63 @@ Notas: ${notes}`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   });
+
+  // ===== Toast notifications =====
+  const toastWrap = document.getElementById('toast-wrap');
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<span class="toast-dot"></span>${msg}`;
+    toastWrap.appendChild(t);
+    requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+    setTimeout(() => {
+      t.classList.remove('show');
+      setTimeout(() => t.remove(), 350);
+    }, 2200);
+  }
+
+  // Attach toast to plus/minus buttons
+  document.querySelectorAll('.qty .plus').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.closest('.qty').dataset.name;
+      showToast(`${name} agregado`);
+    });
+  });
+
+  // ===== Back to top =====
+  const backTop = document.getElementById('back-top');
+  window.addEventListener('scroll', () => {
+    backTop.classList.toggle('visible', window.scrollY > 500);
+  }, { passive: true });
+  backTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // ===== Active nav on scroll =====
+  const navLinks = document.querySelectorAll('nav a');
+  const sections = [...navLinks].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.35 });
+  sections.forEach(s => sectionObserver.observe(s));
 </script>
+
+<!-- ============ FLOATING WHATSAPP ============ -->
+<a href="#pedido" class="wa-float" aria-label="Hacer pedido por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3c1.5.8 3.1 1.3 4.8 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3C4.4 15 4 13.5 4 12c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8zm4.4-5.5c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1-.2.2-.6.8-.8 1-.1.2-.3.2-.5.1-1.3-.6-2.1-1.1-3-2.5-.2-.3 0-.5.1-.6.2-.2.4-.4.5-.6.1-.2.1-.4 0-.5-.1-.2-.6-1.5-.9-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.1 0 1.2 1 2.4 1.1 2.6.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.1.1 1.5.1.5-.1 1.4-.6 1.6-1.1.2-.5.2-1 .1-1.1-.1-.1-.2-.1-.4-.2z"/></svg>
+</a>
+
+<!-- ============ BACK TO TOP ============ -->
+<button class="back-top" id="back-top" aria-label="Volver arriba">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+
+<!-- ============ TOAST CONTAINER ============ -->
+<div class="toast-wrap" id="toast-wrap" aria-live="polite" aria-atomic="true"></div>
 
 </body>
 </html>
